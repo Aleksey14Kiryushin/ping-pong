@@ -1,2 +1,3 @@
-# ping-pong
-Game ping pong
+**ping-pong**
+###Pygame
+######Game ping pong
