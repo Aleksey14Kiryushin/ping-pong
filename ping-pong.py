@@ -1,5 +1,10 @@
+# Добавить возможность играть с ботом
+# Одна картинка с победой слева, для игрока справа проигрыш
+
+
 from pygame import *
 from random import *
+from time import time as now_time
 import os
 
 clock = time.Clock()
@@ -94,7 +99,7 @@ class Puck(Character):
     def update(self):
         # Касание левой и правой стены:
         self.rect.x += self.speed_x 
-        
+
         # if self.rect.x >= 750:
         #     self.returning_back = False
 
@@ -125,8 +130,8 @@ class Puck(Character):
             self.speed_x *= -1
             
     def random_position(self):
-        self.rect.x = randint(50, 650)
-        self.rect.y = 50
+        self.rect.y = randint(100, 700)
+        self.rect.x = randint(300,500)
 
 # Window
 global_height = 800
@@ -151,6 +156,7 @@ puck = Puck(50, 50, 400, 500, picture_puck, 3)
 
 # Variables
 game_Play = True
+stopping = False
 
 while game_Play:
 
@@ -160,22 +166,38 @@ while game_Play:
         if event_get.type == QUIT:
             game_Play = False
 
-    if puck.rect.x <= 10:
-        print("1ST LOST!")
+    if puck.rect.x <= 10 or puck.rect.x >= 785:
+        if puck.rect.x <= 10:
+            print("1ST LOST!")
+            background_left = transform.scale(image.load("lose.jpg"), (global_height/2, global_width/2))
+            background_right = transform.scale(image.load("win.jpg"), (global_height/2, global_width/2))
 
-    if puck.rect.x >= 785:
-        print("2RD LOST!")
+        if puck.rect.x >= 785:
+            print("2RD LOST!")
+            background_left = transform.scale(image.load("win.jpg"), (global_height/2, global_width/2))
+            background_right = transform.scale(image.load("lose.jpg"), (global_height/2, global_width/2))
+   
+        begin_time = now_time()
 
-# Players
-    player_1st.reset()
-    player_1st.update()
+        while int(now_time()) - int(begin_time) <= 2:
+            print("Показываю Fail")
+            window.blit(background_left, (0,200))
+            window.blit(background_right, (400,200))
+            display.update()    
 
-    player_2nd.reset()
-    player_2nd.update()
+        puck.random_position()
 
-# Puck
-    puck.reset()
-    puck.update()
+    if not stopping:
+    # Players
+        player_1st.reset()
+        player_1st.update()
+
+        player_2nd.reset()
+        player_2nd.update()
+
+    # Puck
+        puck.reset()
+        puck.update()
 
     display.update()
 
