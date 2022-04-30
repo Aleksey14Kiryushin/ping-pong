@@ -3,13 +3,23 @@
 # Добавить Menu
 # Таблицу лидеров
 # Жизни
+# Выбрать более приятный цвет
 
+
+# Pause
+# Input Boxes
+
+from tkinter import ACTIVE
 from pygame import *
 from random import *
 from time import time as now_time
 import os
+import json
 
 clock = time.Clock()
+
+COLOR_INACTIVE = (77, 255, 136)
+COLOR_ACTIVE = (172, 57, 172)
 
 # Place
 x = 200
@@ -151,6 +161,196 @@ class Puck(Character):
         self.rect.y = randint(100, 700)
         self.rect.x = randint(300,500)
 
+# Кнопка
+class Area():
+    def __init__(self, x=0, y=0, width=100, height=30, color=(0,0,0)):
+        self.rect = Rect(x, y, width, height)
+        self.fill_color = color
+        self.color = COLOR_INACTIVE
+
+    def set_text(self, text, fsize=30, text_color=(0, 0, 0)):
+        self.text = text
+        self.image = font.Font(None, fsize).render(text, True, text_color)
+
+    def draw(self,fill_color=(204, 51, 153),border_color=(204, 51, 153)):
+        draw.rect(window,fill_color, self.rect)
+        draw.rect(window,border_color, self.rect,5)
+
+    def draw_text(self,shift_x=0, shift_y=0):
+        window.blit(self.image, (self.rect.x + shift_x, self.rect.y + shift_y))      
+
+
+class InputBox:
+    def __init__(self, x, y, w, h, text=''):
+        self.rect = Rect(x, y, w, h)
+        self.color = COLOR_INACTIVE
+        self.text = text
+        self.txt_surface = FONT.render(text, True, (255, 153, 153))
+        self.active = False
+        self.returning = 0
+        self.input_text = ''
+        self.global_name = ''
+
+    def handle_event(self, event):
+        global Menu
+        if event.type == MOUSEBUTTONDOWN:
+            # If the user clicked on the input_box rect.
+            if self.rect.collidepoint(event.pos):
+                # Toggle the active variable.
+                self.active = not self.active
+            else:
+                self.active = False
+            # Change the current color of the input box.
+            if self.active:
+                self.color = COLOR_ACTIVE 
+                self.txt_surface = FONT.render("", True, (255, 153, 153))
+
+            else:
+                self.color = COLOR_INACTIVE
+                self.txt_surface = FONT.render("Write your name here:", True, (255, 153, 153))
+                if self.returning:
+                    self.color = COLOR_INACTIVE
+                    self.input_text = "Successfully"
+
+            # Введите имя
+        if event.type == KEYDOWN:
+            if self.active:
+                if event.key == K_RETURN:
+                    self.returning = 1
+                    global_name = self.input_text
+                    print(global_name) #NAME
+                    self.global_name = self.input_text
+                    self.input_text = ''
+
+                    if MODE == 1 or MODE == 0:
+                        Menu = False
+                    elif MODE == 2:
+                        returnings = 0
+                        for box in input_boxes:
+                            print(box, box.returning)
+                            returnings += box.returning 
+                            if returnings == 2:
+                                Menu = False
+                            print(returnings)
+ 
+                elif event.key == K_BACKSPACE:
+                    self.input_text = self.text[:-1]
+
+                else: 
+                    self.input_text += event.unicode
+                # Re-render the text.
+
+                if self.returning:
+                    self.color = COLOR_INACTIVE
+                    self.input_text = "Successfully"
+
+                self.txt_surface = FONT.render(self.input_text, True, (255, 153, 153))
+
+    def update(self):
+        # Resize the box if the text is too long.
+        width = max(200, self.txt_surface.get_width()+10)
+        self.rect.w = width
+
+    def draw(self, screen):
+        # Blit the rect.
+        draw.rect(screen, self.color, self.rect)
+        # Blit the text.
+        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
+
+def Menu_Play():
+    global Menu, game_Play, MODE, global_begin_time, data, returning, stopping
+
+    with open("records.json", "r", encoding='utf-8') as file:
+        data = json.load(file)
+
+    background = transform.scale(image.load("background.jpg"), (global_height, global_width))
+
+    all_text = show_records()
+
+    while Menu:
+        
+        window.blit(background, (0,0))
+
+        # Закрытие приложения
+        for event_get in event.get():
+            if event_get.type == QUIT:
+                Menu = False
+                game_Play = False
+
+            if event_get.type == MOUSEBUTTONDOWN and event_get.button == 1:
+                x,y = event_get.pos
+                if menu_btn_1.rect.collidepoint(x,y):
+                    MODE = 2
+                    menu_btn_1.color = COLOR_ACTIVE
+                    menu_btn_2.color = COLOR_INACTIVE
+                    menu_btn_3.color = COLOR_INACTIVE
+
+                elif menu_btn_2.rect.collidepoint(x,y):
+                    MODE = 1
+                    menu_btn_2.color = COLOR_ACTIVE
+                    menu_btn_1.color = COLOR_INACTIVE
+                    menu_btn_3.color = COLOR_INACTIVE
+
+                elif menu_btn_3.rect.collidepoint(x,y):
+                    MODE = 0
+                    menu_btn_3.color = COLOR_ACTIVE
+                    menu_btn_2.color = COLOR_INACTIVE
+                    menu_btn_1.color = COLOR_INACTIVE
+
+            
+            input_box1.handle_event(event_get)
+            
+            if MODE == 2:
+                input_box2.handle_event(event_get)
+                input_box2.update()
+                input_box2.draw(window) 
+
+        input_box1.update()
+        input_box1.draw(window) 
+        if MODE == 2:
+            input_box2.update()
+            input_box2.draw(window) 
+        y = 250
+        for text in all_text:
+            window.blit(text, (200, y))
+            y += 30 
+
+        menu_btn_1.draw(menu_btn_1.color)
+        menu_btn_1.draw_text(20, 15)
+
+        menu_btn_2.draw(menu_btn_2.color)
+        menu_btn_2.draw_text(20, 15)
+
+        menu_btn_3.draw(menu_btn_3.color)
+        menu_btn_3.draw_text(20, 15)
+            
+        display.update()
+
+        clock.tick(60) 
+
+    global_begin_time = now_time()
+    # Variables
+    game_Play = True
+    stopping = False
+    MODE = 2
+    returning = 0
+def show_records():
+    global data
+    all_text = list()
+    # Сортировка от меньшего к большему
+    data = dict(sorted(data.items(), key=lambda x: x[1]['time']))
+    
+    tittle = font_type.render("           Records:", True, (210, 121, 166))
+    all_text.append(tittle)
+
+    for player in data:
+        text = font_type.render(str(player) + ': ' + str(data[player]["time"]), True, (255,255,255))
+        all_text.append(text)
+        if len(all_text) == 11:
+            break
+
+    return all_text
+
 # Window
 global_height = 800
 global_width = 800
@@ -191,16 +391,42 @@ hearts_group.add(heart_6th)
 
 # Font
 font.init()
+FONT = font.Font(None, 32)
 font_type = font.Font(None,36)
+
+# Menu
+input_box1 = InputBox(275, 150, 200, 32, "Write your name here:")
+input_box2 = InputBox(275, 200, 200, 32, "Write name of another gamer:")
+
+menu_btn_1 = Area(312,50,170,50,(255, 255, 0))
+menu_btn_1.set_text('Playing 1 vs 1',30,(255, 153, 153))
+menu_btn_1.draw()
+menu_btn_1.color = COLOR_ACTIVE
+
+menu_btn_2 = Area(25,50,270,50,(255, 255, 0))
+menu_btn_2.set_text('Playing with stupid bot',30,(255, 153, 153))
+menu_btn_2.draw()
+
+menu_btn_3 = Area(500,50,270,50,(255, 255, 0))
+menu_btn_3.set_text('Playing with clever bot',30,(255, 153, 153))
+menu_btn_3.draw()
+
+menu_boxes = [menu_btn_1, menu_btn_2, menu_btn_3]
+input_boxes = [input_box1, input_box2]
 
 # Variables
 game_Play = True
 stopping = False
-global_begin_time = now_time()
+Menu = True
+MODE = 2
+returning = 0
 
 while game_Play:
 
     window.blit(background, (0,0))
+
+    if Menu:
+        Menu_Play()
 
     for event_get in event.get():
         if event_get.type == QUIT:
@@ -231,19 +457,34 @@ while game_Play:
 
             if player_2nd.amount_of_lives == 1:
                 heart_5th.set_picture()
+        if player_1st.amount_of_lives == 0 or player_2nd.amount_of_lives == 0:
+            if player_1st.amount_of_lives == 0:
+                stopping = True
+                heart_3rd.set_picture()
 
-        if player_1st.amount_of_lives == 0:
-            stopping = True
-            heart_3rd.set_picture()
+                print("2-ой победил")
 
-            print("2-ой победил")
+                if MODE == 2:
+                    data[input_box2.global_name] = {}
+                    data[input_box2.global_name]["time"] = round(int(now_time()) - global_begin_time, 4)
+                    
+                    with open("records.json", "w", encoding='utf-8') as file:
+                        json.dump(data, file)
 
-        elif player_2nd.amount_of_lives == 0:
-            stopping = True
-            heart_6th.set_picture()
+            elif player_2nd.amount_of_lives == 0:
+                stopping = True
+                heart_6th.set_picture()
 
-            print("1-ый победил")
-
+                print("1-ый победил")
+                data[input_box1.global_name] = {}
+                data[input_box1.global_name]["time"] = round(int(now_time()) - global_begin_time, 4)
+                print(data)
+                with open("records.json", "w", encoding='utf-8') as file:
+                    json.dump(data, file)
+            Menu = True
+            
+            print("MENU_PLAY")
+            
         else:   
             begin_time = now_time()
 
@@ -267,20 +508,26 @@ while game_Play:
         player_1st.update()
 
         player_2nd.reset()
-        player_2nd.extra_bot()
+        if MODE == 0:
+            player_2nd.extra_bot()
 
+        if MODE == 1:
+            player_2nd.update_bot()
+
+        if MODE == 2:
+            player_2nd.update()
     # Puck
         puck.reset()
         puck.update()
-
+    # Time
+        time_label = font_type.render("Time: "+str(round(now_time()-global_begin_time,4)), True, (255,255,255))
+        window.blit(time_label, (350, 50))
     
 # Hearts
     for heart in hearts_group:
         heart.reset()
 
-# Time
-    time_label = font_type.render("Time: "+str(round(now_time()-global_begin_time,4)), True, (255,255,255))
-    window.blit(time_label, (350, 50))
+
 
     display.update()
 
