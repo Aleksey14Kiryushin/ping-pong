@@ -98,6 +98,7 @@ class Enemy(Character):
             self.rect.y += self.y_speed
 # простой уровень
     def update_bot(self):
+        print("ИДУ")
         if self.rect.y >= 775:
             self.returning = False
 
@@ -208,9 +209,6 @@ class InputBox:
             else:
                 self.color = COLOR_INACTIVE
                 self.txt_surface = FONT.render("Write your name here:", True, (255, 153, 153))
-                if self.returning:
-                    self.color = COLOR_INACTIVE
-                    self.input_text = "Successfully"
 
             # Введите имя
         if event.type == KEYDOWN:
@@ -224,6 +222,9 @@ class InputBox:
 
                     if MODE == 1 or MODE == 0:
                         Menu = False
+                        for box in input_boxes:
+                            box.returning = 0
+
                     elif MODE == 2:
                         returnings = 0
                         for box in input_boxes:
@@ -231,18 +232,16 @@ class InputBox:
                             returnings += box.returning 
                             if returnings == 2:
                                 Menu = False
+                                for box in input_boxes:
+                                    box.returning = 0
                             print(returnings)
  
                 elif event.key == K_BACKSPACE:
-                    self.input_text = self.text[:-1]
+                    self.input_text = self.input_text[:-1]
 
                 else: 
                     self.input_text += event.unicode
                 # Re-render the text.
-
-                if self.returning:
-                    self.color = COLOR_INACTIVE
-                    self.input_text = "Successfully"
 
                 self.txt_surface = FONT.render(self.input_text, True, (255, 153, 153))
 
@@ -258,7 +257,7 @@ class InputBox:
         screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
 
 def Menu_Play():
-    global Menu, game_Play, MODE, global_begin_time, data, returning, stopping
+    global Menu, game_Play, MODE, global_begin_time, data, stopping, player_1st, player_2nd, puck, heart_1st, heart_2nd, heart_3rd, heart_4th, heart_5th, heart_6th, hearts_group
 
     with open("records.json", "r", encoding='utf-8') as file:
         data = json.load(file)
@@ -323,17 +322,44 @@ def Menu_Play():
 
         menu_btn_3.draw(menu_btn_3.color)
         menu_btn_3.draw_text(20, 15)
-            
+
         display.update()
 
         clock.tick(60) 
 
+            # Hearts
+    heart_1st = Character(40, 40, 50, 30, "heart.png", 0)
+    heart_2nd = Character(40, 40, 100, 30, "heart.png", 0)
+    heart_3rd = Character(40, 40, 150, 30, "heart.png", 0)
+
+    heart_4th = Character(40, 40, 650, 30, "heart.png", 0)
+    heart_5th = Character(40, 40, 700, 30, "heart.png", 0)
+    heart_6th = Character(40, 40, 750, 30, "heart.png", 0)
+
+    hearts_group = sprite.Group()
+    hearts_group.add(heart_1st)
+    hearts_group.add(heart_2nd)
+    hearts_group.add(heart_3rd)
+    hearts_group.add(heart_4th)
+    hearts_group.add(heart_5th)
+    hearts_group.add(heart_6th)
+
+    # Players
+    pictures_players = ["reflector.png"]
+
+    player_1st = Player(100, 100, 0, 400, pictures_players, 10, 0, 0)
+
+    player_2nd = Enemy(100, 100, 700, 400, pictures_players, 10, 0, 0)
+
+    # Puck
+    picture_puck = ["puck.png"]
+
+    puck = Puck(50, 50, 400, 500, picture_puck, 3)
+
     global_begin_time = now_time()
     # Variables
-    game_Play = True
     stopping = False
-    MODE = 2
-    returning = 0
+
 def show_records():
     global data
     all_text = list()
@@ -360,35 +386,6 @@ display.set_caption("Ping-Pong")
 display.set_icon(image.load("background.jpg"))
 background = transform.scale(image.load("background.jpg"), (global_height, global_width))
 
-# Players
-pictures_players = ["reflector.png"]
-
-player_1st = Player(100, 100, 0, 400, pictures_players, 10, 0, 0)
-
-player_2nd = Enemy(100, 100, 700, 400, pictures_players, 10, 0, 0)
-
-# Puck
-picture_puck = ["puck.png"]
-
-puck = Puck(50, 50, 400, 500, picture_puck, 3)
-
-# Hearts
-heart_1st = Character(40, 40, 50, 30, "heart.png", 0)
-heart_2nd = Character(40, 40, 100, 30, "heart.png", 0)
-heart_3rd = Character(40, 40, 150, 30, "heart.png", 0)
-
-heart_4th = Character(40, 40, 650, 30, "heart.png", 0)
-heart_5th = Character(40, 40, 700, 30, "heart.png", 0)
-heart_6th = Character(40, 40, 750, 30, "heart.png", 0)
-
-hearts_group = sprite.Group()
-hearts_group.add(heart_1st)
-hearts_group.add(heart_2nd)
-hearts_group.add(heart_3rd)
-hearts_group.add(heart_4th)
-hearts_group.add(heart_5th)
-hearts_group.add(heart_6th)
-
 # Font
 font.init()
 FONT = font.Font(None, 32)
@@ -414,12 +411,14 @@ menu_btn_3.draw()
 menu_boxes = [menu_btn_1, menu_btn_2, menu_btn_3]
 input_boxes = [input_box1, input_box2]
 
+# Pause
+pause_btn = Character(50, 50, 50, 200, "pause.png", 0) 
+pause = False 
+
 # Variables
-game_Play = True
-stopping = False
 Menu = True
 MODE = 2
-returning = 0
+game_Play = True
 
 while game_Play:
 
@@ -431,6 +430,19 @@ while game_Play:
     for event_get in event.get():
         if event_get.type == QUIT:
             game_Play = False
+        if event_get.type == MOUSEBUTTONDOWN and event_get.button == 1:  
+            x,y = event_get.pos
+            if pause_btn.rect.collidepoint(x,y) and not stopping:
+                print("PAUSE")
+                begin_pause = now_time()
+                pause = True
+                stopping = True
+
+            elif pause:
+                pause = False
+                stopping = False
+                minus_time = now_time() - begin_pause
+                global_begin_time += minus_time
 
     if puck.rect.x <= 10 or puck.rect.x >= 785:
         if puck.rect.x <= 10:
@@ -502,12 +514,14 @@ while game_Play:
             puck.random_position()
 
         display.update()
+    player_1st.reset()
+    player_2nd.reset()
+    puck.reset()
+
     if not stopping:
-    # Players
-        player_1st.reset()
+    # Players 
         player_1st.update()
 
-        player_2nd.reset()
         if MODE == 0:
             player_2nd.extra_bot()
 
@@ -517,17 +531,18 @@ while game_Play:
         if MODE == 2:
             player_2nd.update()
     # Puck
-        puck.reset()
         puck.update()
+
     # Time
+    if not pause:
         time_label = font_type.render("Time: "+str(round(now_time()-global_begin_time,4)), True, (255,255,255))
-        window.blit(time_label, (350, 50))
-    
+    window.blit(time_label, (350, 50))
+     
 # Hearts
     for heart in hearts_group:
         heart.reset()
 
-
+    pause_btn.reset()
 
     display.update()
 
